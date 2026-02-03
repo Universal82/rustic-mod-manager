@@ -1,0 +1,5 @@
+/target
+/API_KEY
+/pkg
+/*.pkg.tar.zst
+/Cargo.lock

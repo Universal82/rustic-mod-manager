@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0.0
+Name=Rustic Mod Manager
+Comment=Moss' Custom Mod Manager
+Exec=/bin/rsmm
+Icon=rsmm
+Terminal=false
+Type=Application
+Categories=Games;Application;
