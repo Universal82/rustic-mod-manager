@@ -1,5 +1,9 @@
 use std::env::args;
 
+use eframe::App;
+
+use crate::interactions_api::instance::{create_instance, types::InstanceMetadata};
+
 mod interactions_api;
 
 /// just a collection of supported appids for if I impliment modding for anything that isn't skyrim
@@ -81,6 +85,9 @@ async fn main() -> Result<(),i8> {
         if let Some(v) = interactions_api::steam::find_game(Appids::SkyrimSE.into()) {
             println!("{v}");
         }
+
+        create_instance(Appids::SkyrimSE.into(), InstanceMetadata { path: "MyNewInstance".to_string(), display_name: "My New Instance".to_string() });
+
         return Ok(());
     }
     Ok(())

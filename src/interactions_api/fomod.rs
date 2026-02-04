@@ -39,9 +39,9 @@ pub mod types {
         name: String,
         description: String,
         image: Image,
-        conditon_flags: Option<Vec<Flag>>,
+        conditon_flags: Vec<Flag>,
         type_descriptor: TypeDescriptor,
-        files: Option<Vec<Folder>>
+        files: Vec<Folder>
     }
 
     struct Plugins {
@@ -84,6 +84,36 @@ pub mod types {
     
     pub struct FomodData {
         module_name: String,
-        module_image: Image
+        module_image: Image,
+        install_steps: InstallSteps
+    }
+
+
+    impl From<String> for FomodData {
+        /// coverts ModuleConfig.xml into a rust data structure that can be used to construct an interactive interface for selecting options
+        fn from(value: String) -> Self {
+            // define a mutable, mostly empty FomodData to return later
+            let mut return_val = FomodData {
+                module_name: "".to_string(),
+                module_image: Image {
+                    image_path: "".to_string()
+                },
+                install_steps: InstallSteps {
+                    order: Order::Explicit,
+                    steps: vec![
+
+                    ]
+                }
+            };
+
+            // read the file line by line
+            for line in value.lines() {
+                // redefine line as itself but with whitespace trimmed
+                let line = line.trim();
+            }
+
+            // return result
+            return return_val;
+        }
     }
 }
