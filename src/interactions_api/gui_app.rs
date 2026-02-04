@@ -11,7 +11,8 @@ pub static IMAGE_BYTES: &[u8] = include_bytes!("../assets/icon128x128.png");
 pub struct ModEntry {
     pub mod_name: String,
     pub mod_path: String,
-    pub enabled: bool
+    pub enabled: bool,
+    pub to_be_deleted: bool,
 }
 
 #[derive(Default)]
@@ -22,6 +23,12 @@ pub struct ModManagerApp {
 
 impl eframe::App for ModManagerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.top_bar_buttons = vec![
+            ("Add Dummy".to_string(), false),
+            ("I am a button".to_string(), false),
+            ("I am a button".to_string(), false),
+        ];
+
         ctx.set_pixels_per_point(1.5);
     
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -34,17 +41,20 @@ impl eframe::App for ModManagerApp {
                 }
             });
             ui.separator();
+
+            // page content
             ui.columns(2, |column| {
                 column[0].label("EEE");
                 column[1].label("AAA");
+                column[0].set_width(200.0);
             });
-            // This literally creates the button AND checks to see if it was clicked
             if ui.button("Quit").clicked() {
                 std::process::exit(0);
             };
 
-            if ui.button("add_item").clicked() {
-                self.mods.push(ModEntry { mod_name: "DummyMod".to_string(), mod_path: "DummyMod".to_string(), enabled: true });
+            if self.top_bar_buttons[0].1 {
+                self.mods.push(ModEntry { mod_name: "DummyMod".to_string(), mod_path: "DummyMod".to_string(), enabled: true, to_be_deleted: false });
+                self.top_bar_buttons[0].1 = false;
             };
             egui::ScrollArea::vertical().show(ui, |ui| {
                 // Iterate over the items in your data structure

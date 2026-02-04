@@ -21,7 +21,7 @@ provides=()
 conflicts=()
 replaces=()
 backup=()
-options=()
+options=('!debug')
 install=
 changelog=
 source=()
@@ -34,7 +34,6 @@ build() {
 
 
 package() {
-    ls ..
     mkdir -p ../pkg/$pkgname/usr/share/applications
     mkdir -p ../pkg/$pkgname/usr/share/icons/rsmm/32
     mkdir -p ../pkg/$pkgname/usr/share/icons/rsmm/64
@@ -47,4 +46,5 @@ package() {
     cp ../target/release/rustic-mod-manager ../pkg/$pkgname/usr/bin/rsmm
     chmod +x ../pkg/$pkgname/usr/bin/rsmm
     cp ./assets/rsmm.desktop ../pkg/$pkgname/usr/share/applications/rsmm.desktop
+    cp ./assets/nxm_handler.desktop ../pkg/$pkgname/usr/share/applications/nxm_handler.desktop
 }
