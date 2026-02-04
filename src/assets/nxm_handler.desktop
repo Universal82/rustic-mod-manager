@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=RSMM nxm link handler
-Exec=/bin/rsmm --install %u
+Exec=/bin/rsmm --no-user --install %u
 Terminal=false
 Type=Application
 MimeType=x-scheme-handler/nxm;
