@@ -11,10 +11,10 @@ use iced::Length::Shrink;
 use iced::application::BootFn;
 use iced::theme::Style;
 use iced::wgpu::wgc::command::CopySide::Source;
-use iced::widget::{Checkbox, Column, Row, Text, button, checkbox, column, container, row, scrollable, text, text_editor};
+use iced::widget::{Checkbox, Column, Row, Text, button, checkbox, column, container, row, scrollable, space, text, text_editor};
 use iced::window::Event::{self, CloseRequested};
 use iced::window::{Id, size};
-use iced::{Element, Fill, Program, Renderer, Size, Subscription, Theme, color, event, window};
+use iced::{Element, Fill, Padding, Program, Renderer, Size, Subscription, Theme, color, event, window};
 use serde_json::de;
 
 use crate::gui::app::Message::ToggleMod;
@@ -74,6 +74,7 @@ pub enum Message {
     None,
 
     // Mod Management
+    DeployMods,
     AddMod(String),
     ToggleMod(usize),
     AddModEntryText(iced::widget::text_editor::Action),
@@ -117,23 +118,26 @@ impl ModManager {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::ChangeViewState(s) => {
-                println!("Changing view_state to {s:#?}");
+                // println!("Changing view_state to {s:#?}");
                 self.view_state = s;
             },
             Message::AddMod(s) => {
-                println!("Adding mod with path/uri: {s}");
+                // println!("Adding mod with path/uri: {s}");
                 self.mods.push(GameMod::new(s, ModSource::None));
             },
             Message::AddModEntryText(a) => {
-                println!("Action: {a:#?}");
+                // println!("Action: {a:#?}");
                 self.mod_uris.perform(a);
             },
             Message::WindowResize(s) => {
-                println!("Resized to: {s:#?}");
+                // println!("Resized to: {s:#?}");
                 self.window_size = s;
             },
             Message::ToggleMod(i) => {
                 self.mods[i].toggle();
+            },
+            Message::DeployMods => {
+                
             },
             Message::None => {}
         }
@@ -151,15 +155,15 @@ impl ModManager {
             row![
                 button("Settings")
                     .on_press(Message::ChangeViewState(ViewState::Settings))
-                    .style(style::toolbar::button)
+                    .style(style::light::button)
                     .width(Fill),
                 button("Mod View")
                     .on_press(Message::ChangeViewState(ViewState::ModView))
-                    .style(style::toolbar::button)
+                    .style(style::light::button)
                     .width(Fill),
                 button("Add Mod(s)")
                     .on_press(Message::ChangeViewState(ViewState::AddMod))
-                    .style(style::toolbar::button)
+                    .style(style::light::button)
                     .width(Fill),
             ],
             match self.view_state {
@@ -169,41 +173,55 @@ impl ModManager {
                     ].height(Fill)
                     .width(Fill)
                 },
+                
+                
                 ViewState::AddMod => {
                     column![
-                        text("Enter NXM links and file paths, split by line"),
-                        text_editor(&self.mod_uris)
-                            .placeholder("nxm://...")
-                            .on_action(Message::AddModEntryText)
-                            .width(self.window_size.width)
-                            .height(200.0),
+                        text("Enter NXM links and file paths, split by line").center(),
+                        container(
+                            text_editor(&self.mod_uris)
+                                .placeholder("nxm://...\n/path/to/mod.archive")
+                                .on_action(Message::AddModEntryText)
+                                .width(self.window_size.width * 95.0)
+                                .height(200.0)
+                        ).padding(10.0).style(style::light::container),
                         button("Add Dummy Mod")
                             .on_press(Message::AddMod("Dummy Mod".to_string()))
-                            .style(style::toolbar::button),
+                            .style(style::light::button),
                     ].height(Fill).width(Fill)
                 },
+
+
                 ViewState::ModView => {
+                    let mut list_bg = true;
                     let mod_list_content = Column::<Message>::with_children(self.mods.iter().enumerate().map(|(i, game_mod)|{
-                        row![
+                        container(row![
                             checkbox::<Message, Theme, Renderer>(game_mod.enabled).on_toggle(move |_|{Message::ToggleMod(i)}),
+                            space().width(5.0),
                             text(game_mod.name.clone()),
+                            text("  |  "),
                             text(game_mod.source.to_string())
-                        ].into()
+                        ].align_y(Center)).width(Fill).style(match list_bg {
+                            true => {list_bg = list_bg.not(); style::light::list_container_1},
+                            false => {list_bg = list_bg.not(); style::light::list_container_2}
+                        }).padding(Padding { top: 2.5, right: 5.0, bottom: 2.5, left: 5.0 }).into()
                     })).spacing(1.0);
+
+                    let control_panel_content = column![
+                        button("Deploy Mods").on_press(Message::DeployMods)
+                    ];
                     
                     column![
                         row![
-                            container(mod_list_content).width(self.window_size.width * 0.75).height(Fill).style(style::mod_view::container),
-                            column![
-    
-                            ].height(Fill).width(Fill)
+                            container(mod_list_content).width(self.window_size.width * (2.0 / 3.0)).height(Fill).style(style::light::container),
+                            container(control_panel_content).height(Fill).width(Fill).style(style::light::container)
                         ].height(Fill).width(Fill),
                     
                     ].height(Fill).width(Fill)
                 },
-                _ => column![
-                    "No ViewState, this shouldn't happen."
-                ]
+                // _ => column![
+                //     "No ViewState, this shouldn't happen."
+                // ]
             }
         ]
         .width(Fill)
