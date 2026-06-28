@@ -1,8 +1,6 @@
 use std::env::args;
 
-use eframe::App;
-
-use crate::interactions_api::instance::{create_instance, types::InstanceMetadata};
+use crate::interactions_api::{gui_app::ModManager, instance::{create_instance, types::InstanceMetadata}};
 
 mod interactions_api;
 
@@ -38,35 +36,10 @@ async fn main() -> Result<(),i8> {
         /////////////////////////////
         
         //*
-        use crate::interactions_api::gui_app::*;
+        use crate::interactions_api::gui_app::ModManager;
 
-        use egui::IconData;
-
-        let icon = {
-            //let image_bytes = include_bytes!("assets/icon32x32.png");
-            let image = image::load_from_memory(IMAGE_BYTES)
-                .expect("Failed to load icon from memory")
-                .to_rgba8();
-    
-            let (width, height) = image.dimensions();
-            IconData {
-                rgba: image.into_vec(),
-                width,
-                height,
-            }
-        };
-    
-        let native_options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size((1600.0, 900.0)).with_icon(icon),
-            ..eframe::NativeOptions::default()
-        };
-    
-        eframe::run_native(
-            APP_NAME,
-            native_options,
-            Box::new(|_| Ok(Box::<interactions_api::gui_app::ModManagerApp>::default())),
-            ).expect("Idk what to expect");
-        // */
+        iced::run(ModManager::update, ModManager::view).expect("Expected to run iced window with no errors");
+        
     } else if args.contains(&"--install".to_string()) {
         let install_arg_pos = args.iter().position(|item|{
             item == "--install"
