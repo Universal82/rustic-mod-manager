@@ -1,15 +1,13 @@
-
 pub mod types {
     use std::path::PathBuf;
 
-
     struct FlagDependency {
         flag: String,
-        value: String
+        value: String,
     }
 
     enum Operand {
-        And(Vec<FlagDependency>,Box<Vec<Operand>>)
+        And(Vec<FlagDependency>, Box<Vec<Operand>>),
     }
 
     struct DependencyOperand {
@@ -17,22 +15,22 @@ pub mod types {
     }
 
     enum Type {
-        Optional
+        Optional,
     }
 
     struct TypeDescriptor {
-        desc_type: Type
+        desc_type: Type,
     }
 
     struct Flag {
         name: String,
-        body: String
+        body: String,
     }
 
     struct Folder {
         source: PathBuf,
         destination: String,
-        priority: i16
+        priority: i16,
     }
 
     struct Plugin {
@@ -41,53 +39,52 @@ pub mod types {
         image: Image,
         conditon_flags: Vec<Flag>,
         type_descriptor: TypeDescriptor,
-        files: Vec<Folder>
+        files: Vec<Folder>,
     }
 
     struct Plugins {
         order: Order,
-        plugins: Vec<Plugin>
+        plugins: Vec<Plugin>,
     }
 
     enum SelectionType {
-        SelectExactlyOne
+        SelectExactlyOne,
     }
     struct Group {
         name: String,
         selection_type: SelectionType,
-        plugins: Plugins
+        plugins: Plugins,
     }
 
     struct OptionalFileGroups {
         order: Order,
-        group: Group
+        group: Group,
     }
 
     enum Order {
-        Explicit
+        Explicit,
     }
-    
+
     struct InstallStep {
         name: String,
         visible: DependencyOperand,
-        optional_file_groups: OptionalFileGroups
+        optional_file_groups: OptionalFileGroups,
     }
-    
+
     struct InstallSteps {
         order: Order,
-        steps: Vec<InstallStep>
+        steps: Vec<InstallStep>,
     }
-    
+
     struct Image {
-        image_path: String
+        image_path: String,
     }
-    
+
     pub struct FomodData {
         module_name: String,
         module_image: Image,
-        install_steps: InstallSteps
+        install_steps: InstallSteps,
     }
-
 
     impl From<String> for FomodData {
         /// coverts ModuleConfig.xml into a rust data structure that can be used to construct an interactive interface for selecting options
@@ -96,14 +93,12 @@ pub mod types {
             let mut return_val = FomodData {
                 module_name: "".to_string(),
                 module_image: Image {
-                    image_path: "".to_string()
+                    image_path: "".to_string(),
                 },
                 install_steps: InstallSteps {
                     order: Order::Explicit,
-                    steps: vec![
-
-                    ]
-                }
+                    steps: vec![],
+                },
             };
 
             // read the file line by line
