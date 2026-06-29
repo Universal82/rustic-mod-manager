@@ -2,26 +2,19 @@
 // don't look, it's a mess //
 /////////////////////////////
 
-use std::collections::HashMap;
+
 use std::ops::Not;
 use std::path::PathBuf;
 
 use iced::Alignment::Center;
-use iced::Length::Shrink;
-use iced::application::BootFn;
-use iced::theme::Style;
-use iced::wgpu::wgc::command::CopySide::Source;
-use iced::widget::{Checkbox, Column, Row, Text, button, checkbox, column, container, row, scrollable, space, text, text_editor};
-use iced::window::Event::{self, CloseRequested};
-use iced::window::{Id, size};
-use iced::{Element, Fill, Padding, Program, Renderer, Size, Subscription, Theme, color, event, window};
-use serde_json::de;
+use iced::widget::{Column, button, checkbox, column, container, row, space, text, text_editor};
+use iced::window;
+use iced::{Fill, Padding, Renderer, Subscription, Theme};
 
-use crate::gui::app::Message::ToggleMod;
 use crate::gui::style;
 use crate::interactions_api::nexus;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub enum ModSource {
     #[default]
     None,
@@ -39,7 +32,7 @@ impl ToString for ModSource {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct GameMod {
     pub name: String,
     pub source: ModSource,
@@ -75,7 +68,8 @@ pub enum Message {
 
     // Mod Management
     DeployMods,
-    AddMod(String),
+    AddMod(GameMod),
+    AddModsFromLines(String),
     ToggleMod(usize),
     AddModEntryText(iced::widget::text_editor::Action),
 
@@ -88,8 +82,15 @@ pub enum Message {
 pub enum ViewState {
     #[default]
     ModView,
+    AddMod,
+    Instances,
+    InstallMod,
     Settings,
-    AddMod
+}
+
+#[derive(Default, serde::Serialize, serde::Deserialize)]
+pub struct Config {
+    pub mods: Vec<GameMod>
 }
 
 #[derive(Default)]
@@ -98,6 +99,7 @@ pub struct ModManager {
     pub view_state: ViewState,
     pub mod_uris: text_editor::Content,
     pub mods: Vec<GameMod>,
+    pub config: Config,
 }
 
 impl ModManager {
@@ -121,9 +123,9 @@ impl ModManager {
                 // println!("Changing view_state to {s:#?}");
                 self.view_state = s;
             },
-            Message::AddMod(s) => {
+            Message::AddMod(m) => {
                 // println!("Adding mod with path/uri: {s}");
-                self.mods.push(GameMod::new(s, ModSource::None));
+                self.mods.push(m);
             },
             Message::AddModEntryText(a) => {
                 // println!("Action: {a:#?}");
@@ -136,6 +138,15 @@ impl ModManager {
             Message::ToggleMod(i) => {
                 self.mods[i].toggle();
             },
+            Message::AddModsFromLines(s) => {
+                for line in s.lines() {
+                    if line.starts_with("nxm://") {
+                        // handle nxm links
+                    } else {
+                        // handle file paths
+                    }
+                }
+            },
             Message::DeployMods => {
                 
             },
@@ -143,7 +154,6 @@ impl ModManager {
         }
     }
 
-    // This doesn't really work yet, so I'm not including it until I get a working version
     fn subscription(&self) -> Subscription<Message> {
         window::resize_events().map(|(_, size)|{
             Message::WindowResize(size)
@@ -155,6 +165,10 @@ impl ModManager {
             row![
                 button("Settings")
                     .on_press(Message::ChangeViewState(ViewState::Settings))
+                    .style(style::light::button)
+                    .width(Fill),
+                button("Instances")
+                    .on_press(Message::ChangeViewState(ViewState::Instances))
                     .style(style::light::button)
                     .width(Fill),
                 button("Mod View")
@@ -185,8 +199,11 @@ impl ModManager {
                                 .width(self.window_size.width * 95.0)
                                 .height(200.0)
                         ).padding(10.0).style(style::light::container),
+                        button("Add Mods")
+                            .on_press(Message::AddModsFromLines(self.mod_uris.text()))
+                            .style(style::light::button),
                         button("Add Dummy Mod")
-                            .on_press(Message::AddMod("Dummy Mod".to_string()))
+                            .on_press(Message::AddMod(GameMod::new("Dummy Mod", ModSource::None)))
                             .style(style::light::button),
                     ].height(Fill).width(Fill)
                 },
@@ -208,7 +225,7 @@ impl ModManager {
                     })).spacing(1.0);
 
                     let control_panel_content = column![
-                        button("Deploy Mods").on_press(Message::DeployMods)
+                        button("Deploy Mods").on_press(Message::DeployMods).style(style::light::button),
                     ];
                     
                     column![
@@ -219,9 +236,20 @@ impl ModManager {
                     
                     ].height(Fill).width(Fill)
                 },
-                // _ => column![
-                //     "No ViewState, this shouldn't happen."
-                // ]
+
+
+                ViewState::InstallMod => {
+                    column![
+                        "Install mod ViewState"
+                    ]
+                },
+
+
+                ViewState::Instances => {
+                    column![
+                        "Instance manager"
+                    ]
+                }
             }
         ]
         .width(Fill)

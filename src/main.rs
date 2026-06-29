@@ -1,6 +1,6 @@
 use std::env::args;
 
-use crate::{gui::app::ModManager, interactions_api::instance::{create_instance, types::InstanceMetadata}};
+use crate::{interactions_api::instance::{create_instance, types::InstanceMetadata}};
 
 mod interactions_api;
 mod gui;

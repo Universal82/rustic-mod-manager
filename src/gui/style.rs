@@ -36,7 +36,7 @@ pub mod light {
         radius: super::NO_RADIUS
     };
 
-    pub fn button(theme: &iced::Theme, status: iced::widget::button::Status) -> iced::widget::button::Style {
+    pub fn button(_: &iced::Theme, status: iced::widget::button::Status) -> iced::widget::button::Style {
         match status {
             iced::widget::button::Status::Pressed => {
                 iced::widget::button::Style {
@@ -59,7 +59,7 @@ pub mod light {
         }
     }
 
-    pub fn container(theme: &iced::Theme) -> iced::widget::container::Style {
+    pub fn container(_: &iced::Theme) -> iced::widget::container::Style {
         iced::widget::container::Style {
             text_color: None,
             background: Some(super::light::BACKGROUND_A),
@@ -69,7 +69,7 @@ pub mod light {
         }
     }
 
-    pub fn list_container_1(theme: &iced::Theme) -> iced::widget::container::Style {
+    pub fn list_container_1(_: &iced::Theme) -> iced::widget::container::Style {
         iced::widget::container::Style {
             text_color: None,
             background: Some(super::light::BACKGROUND_LIST_A),
@@ -79,7 +79,7 @@ pub mod light {
         }
     }
 
-    pub fn list_container_2(theme: &iced::Theme) -> iced::widget::container::Style {
+    pub fn list_container_2(_: &iced::Theme) -> iced::widget::container::Style {
         iced::widget::container::Style {
             text_color: None,
             background: Some(super::light::BACKGROUND_LIST_B),

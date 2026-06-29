@@ -10,7 +10,7 @@ pub enum DepType {
 
 /// A structure used for holding data gathered from an nxm link
 #[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct UrlData {
     game_name: String,
     mod_id: String,
