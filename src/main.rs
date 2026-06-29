@@ -1,7 +1,5 @@
 use std::env::args;
 
-use crate::{interactions_api::instance::{create_instance, types::InstanceMetadata}};
-
 mod interactions_api;
 mod gui;
 
@@ -47,13 +45,7 @@ async fn main() -> Result<(), i8> {
             println!("{v}");
         }
 
-        create_instance(
-            Appids::SkyrimSE.into(),
-            InstanceMetadata {
-                path: "MyNewInstance".to_string(),
-                display_name: "My New Instance".to_string(),
-            },
-        );
+        crate::interactions_api::instance::ensure_data_dir_init();
 
         return Ok(());
     }

@@ -7,7 +7,7 @@ use std::ops::Not;
 use std::path::PathBuf;
 
 use iced::Alignment::Center;
-use iced::widget::{Column, button, checkbox, column, container, row, space, text, text_editor};
+use iced::widget::{Column, button, checkbox, column, container, row, scrollable, space, text, text_editor};
 use iced::window;
 use iced::{Fill, Padding, Renderer, Subscription, Theme};
 
@@ -88,9 +88,17 @@ pub enum ViewState {
     Settings,
 }
 
-#[derive(Default, serde::Serialize, serde::Deserialize)]
+#[derive(Default, Debug, serde::Serialize, serde::Deserialize)]
+pub enum AppTheme {
+    #[default]
+    Light,
+    Dark
+}
+
+#[derive(Default, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Config {
-    pub mods: Vec<GameMod>
+    pub instances: crate::interactions_api::instance::Instances,
+    pub theme: AppTheme
 }
 
 #[derive(Default)]
@@ -99,6 +107,7 @@ pub struct ModManager {
     pub view_state: ViewState,
     pub mod_uris: text_editor::Content,
     pub mods: Vec<GameMod>,
+    // pub mods_scroll: Viewport,
     pub config: Config,
 }
 
@@ -125,7 +134,9 @@ impl ModManager {
             },
             Message::AddMod(m) => {
                 // println!("Adding mod with path/uri: {s}");
-                self.mods.push(m);
+                for _ in 1..=10 {
+                    self.mods.push(m.clone());
+                }
             },
             Message::AddModEntryText(a) => {
                 // println!("Action: {a:#?}");
@@ -183,7 +194,12 @@ impl ModManager {
             match self.view_state {
                 ViewState::Settings => {
                     column![
-                        "Settings Screen"
+                        "Settings Screen",
+                        row![
+                            column![
+
+                            ]
+                        ]
                     ].height(Fill)
                     .width(Fill)
                 },
@@ -230,8 +246,16 @@ impl ModManager {
                     
                     column![
                         row![
-                            container(mod_list_content).width(self.window_size.width * (2.0 / 3.0)).height(Fill).style(style::light::container),
-                            container(control_panel_content).height(Fill).width(Fill).style(style::light::container)
+                            container(
+                                scrollable(mod_list_content)
+                                    .height(Fill)
+                                    .width(Fill)
+                                    .style(style::light::scrollable)
+                            )
+                                .height(Fill)
+                                .width(self.window_size.width * (2.0 / 3.0))
+                                .style(style::light::container),
+                            control_panel_content
                         ].height(Fill).width(Fill),
                     
                     ].height(Fill).width(Fill)
