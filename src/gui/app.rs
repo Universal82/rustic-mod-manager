@@ -107,7 +107,6 @@ pub struct ModManager {
     pub view_state: ViewState,
     pub mod_uris: text_editor::Content,
     pub mods: Vec<GameMod>,
-    // pub mods_scroll: Viewport,
     pub config: Config,
 }
 
