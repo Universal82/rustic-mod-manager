@@ -221,6 +221,7 @@ impl ModManager {
             }
             Message::SelectInstance(i) => {
                 self.config.active_instance = i;
+                self.update(Message::ChangeViewState(ViewState::Instances(InstancesState::Edit)));
             },
             Message::DeployMods => {
                 
@@ -353,7 +354,6 @@ impl ModManager {
                             column![
                                 row![
                                     button("Add Instance").on_press(Message::ChangeViewState(ViewState::Instances(InstancesState::Add))).width(Fill).style(style::light::button),
-                                    button("STB").width(Fill).style(style::light::button),
                                     button("STB").width(Fill).style(style::light::button),
                                     button("STB").width(Fill).style(style::light::button),
                                 ],

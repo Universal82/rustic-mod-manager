@@ -9,7 +9,6 @@ pub struct Instance {
     pub name: String,
     pub desc: String,
     pub mods: Vec<crate::app::GameMod>,
-    pub filename: String,
 }
 
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize)]
