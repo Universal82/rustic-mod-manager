@@ -3,22 +3,25 @@
 /////////////////////////////
 
 
+use std::error::Error;
+use std::io::Read;
 use std::ops::Not;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use iced::Alignment::Center;
 use iced::widget::{Column, button, checkbox, column, container, row, scrollable, space, text, text_editor};
 use iced::window;
 use iced::{Fill, Padding, Renderer, Subscription, Theme};
+use serde::Deserializer;
 
-use crate::gui::style;
-use crate::interactions_api::nexus;
+use crate::instance::{self, Instances};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub enum ModSource {
     #[default]
     None,
-    Nexus(nexus::UrlData),
+    Nexus(interactions::nexus::UrlData),
     Local(PathBuf),
 }
 
@@ -68,14 +71,23 @@ pub enum Message {
 
     // Mod Management
     DeployMods,
+    ToggleMod(usize),
     AddMod(GameMod),
     AddModsFromLines(String),
-    ToggleMod(usize),
-    AddModEntryText(iced::widget::text_editor::Action),
-
+    AddInstance(instance::Instance),
+    SelectInstance(String),
+    
     // General Application management
     ChangeViewState(ViewState),
     WindowResize(iced::Size),
+    AddModEntryText(iced::widget::text_editor::Action),
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub enum InstancesState {
+    #[default]
+    Add,
+    Edit,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -83,7 +95,7 @@ pub enum ViewState {
     #[default]
     ModView,
     AddMod,
-    Instances,
+    Instances(InstancesState),
     InstallMod,
     Settings,
 }
@@ -97,17 +109,45 @@ pub enum AppTheme {
 
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Config {
-    pub instances: crate::interactions_api::instance::Instances,
+    pub active_instance: String,
+    #[serde(default)]
+    pub mods_directory: PathBuf,
     pub theme: AppTheme
+}
+
+impl Config {
+    pub fn from_disk() -> Self {
+        let mut binding = std::fs::OpenOptions::new();
+        let file = binding.read(true).write(false);
+        let mut file = match file.open(instance::absolve_home_paths("~/.rsmm/config.json")) {
+            Ok(v) => v,
+            Err(_) => {
+                instance::ensure_data_dir_init();
+                file.open(instance::absolve_home_paths("~/.rsmm/config.json")).unwrap()
+            },
+        };
+        let mut text_conf = String::new();
+        let _ = file.read_to_string(&mut text_conf);
+         
+        return match serde_json::from_str(&text_conf.as_str()) {
+            Ok(v) => v,
+            Err(e) => {
+                println!("{}", e.to_string());
+                panic!("Failed for config reasons.")
+            }
+        };
+    }
 }
 
 #[derive(Default)]
 pub struct ModManager {
     pub window_size: iced::Size,
     pub view_state: ViewState,
-    pub mod_uris: text_editor::Content,
+    pub text_entries: Vec<String>,
+    pub text_editors: Vec<text_editor::Content>,
     pub mods: Vec<GameMod>,
-    pub config: Config,
+    pub config: Config, // Everything in here will get saved to a config file and restored on
+    pub instances: instance::Instances,
 }
 
 impl ModManager {
@@ -120,15 +160,34 @@ impl ModManager {
     }
 
     pub fn boot() -> Self {
-        Self {
+        let mut out = Self {
             ..Default::default()
-        }
+        };
+
+        out.config = Config::from_disk();
+        out.instances = Instances::from_disk();
+
+        out.text_editors.push(text_editor::Content::new());
+
+        out
+    }
+
+    pub fn load_config(&mut self) -> &Self {
+        
+        self.config = Config::from_disk();
+
+        self
     }
 
     pub fn update(&mut self, message: Message) {
         match message {
             Message::ChangeViewState(s) => {
                 // println!("Changing view_state to {s:#?}");
+                match s {
+                    // (Re)load instances on opening of instances page
+                    ViewState::Instances(..) => self.instances = Instances::from_disk(),
+                    _ => {}
+                }
                 self.view_state = s;
             },
             Message::AddMod(m) => {
@@ -139,7 +198,7 @@ impl ModManager {
             },
             Message::AddModEntryText(a) => {
                 // println!("Action: {a:#?}");
-                self.mod_uris.perform(a);
+                self.text_editors[0].perform(a);
             },
             Message::WindowResize(s) => {
                 // println!("Resized to: {s:#?}");
@@ -156,6 +215,12 @@ impl ModManager {
                         // handle file paths
                     }
                 }
+            },
+            Message::AddInstance(i) => {
+                self.instances.add(i);
+            }
+            Message::SelectInstance(i) => {
+                self.config.active_instance = i;
             },
             Message::DeployMods => {
                 
@@ -175,10 +240,13 @@ impl ModManager {
             row![
                 button("Settings")
                     .on_press(Message::ChangeViewState(ViewState::Settings))
-                    .style(style::light::button)
+                    .style(match self.config.theme {
+                        AppTheme::Light => style::light::button,
+                        AppTheme::Dark => style::dark::button
+                    })
                     .width(Fill),
                 button("Instances")
-                    .on_press(Message::ChangeViewState(ViewState::Instances))
+                    .on_press(Message::ChangeViewState(ViewState::Instances(InstancesState::Edit)))
                     .style(style::light::button)
                     .width(Fill),
                 button("Mod View")
@@ -193,11 +261,8 @@ impl ModManager {
             match self.view_state {
                 ViewState::Settings => {
                     column![
-                        "Settings Screen",
                         row![
-                            column![
-
-                            ]
+                            //button().
                         ]
                     ].height(Fill)
                     .width(Fill)
@@ -208,14 +273,14 @@ impl ModManager {
                     column![
                         text("Enter NXM links and file paths, split by line").center(),
                         container(
-                            text_editor(&self.mod_uris)
+                            text_editor(&self.text_editors[0])
                                 .placeholder("nxm://...\n/path/to/mod.archive")
                                 .on_action(Message::AddModEntryText)
                                 .width(self.window_size.width * 95.0)
                                 .height(200.0)
                         ).padding(10.0).style(style::light::container),
                         button("Add Mods")
-                            .on_press(Message::AddModsFromLines(self.mod_uris.text()))
+                            .on_press(Message::AddModsFromLines(self.text_editors[0].text()))
                             .style(style::light::button),
                         button("Add Dummy Mod")
                             .on_press(Message::AddMod(GameMod::new("Dummy Mod", ModSource::None)))
@@ -268,19 +333,46 @@ impl ModManager {
                 },
 
 
-                ViewState::Instances => {
+                ViewState::Instances(state) => {
+                    let mut list_bg = true;
+                    let instances = Column::<Message>::with_children(self.instances.iter().map(|i|{
+                        container(row![
+                            button("Select").on_press(Message::SelectInstance(i.name.clone())).style(style::light::button),
+                            space().width(5.0),
+                            text(i.name.clone()).align_y(Center)
+                        ].align_y(Center)).width(Fill).style(match list_bg {
+                            true => {list_bg = list_bg.not(); style::light::list_container_1},
+                            false => {list_bg = list_bg.not(); style::light::list_container_2}
+                        }).padding(Padding { top: 2.5, right: 5.0, bottom: 2.5, left: 5.0 }).into()
+                    }));
                     column![
-                        "Instance manager"
+                        row![
+                            container(
+                                scrollable(instances).width(Fill).height(Fill).style(style::light::scrollable)
+                            ).width(self.window_size.width * 0.25).height(Fill).style(style::light::container),
+                            column![
+                                row![
+                                    button("Add Instance").on_press(Message::ChangeViewState(ViewState::Instances(InstancesState::Add))).width(Fill).style(style::light::button),
+                                    button("STB").width(Fill).style(style::light::button),
+                                    button("STB").width(Fill).style(style::light::button),
+                                    button("STB").width(Fill).style(style::light::button),
+                                ],
+                                match state {
+                                    InstancesState::Add => column![
+                                        "Adding"
+                                    ],
+                                    InstancesState::Edit => column![
+                                        text(String::from("Editing Instance: \"") + self.config.active_instance.clone().as_str() + "\"")
+                                    ]
+                                }
+                            ],
+                        ],
                     ]
                 }
             }
         ]
         .width(Fill)
     }
-
-    // fn toggle_mod(&mut self, name) {
-
-    // }
 }
 
 // impl BootFn<ModManager, Message> for ModManager {
